@@ -598,10 +598,16 @@ if (Math.abs(playerX) > 1.15 && speed >= maxOffSpeed) {
     x += dx;
     dx += l.curve;
 
-    if (l.Y >= maxy) continue; // Pula se o segmento estiver abaixo do segmento anterior (não visível).
-    maxy = l.Y; // Atualiza o Y máximo visível.
+    if (l.Y >= maxy) {
+      l.visible = false; 
+      continue; // Pula se o segmento estiver abaixo do segmento anterior (não visível).
+    }
 
-    let even = ((n / 2) | 0) % 2; // Alterna entre 0 e 1 para cores zebradas.
+    // Se o loop chegou aqui, o segmento é visível
+    l.visible = true; 
+    maxy = l.Y; // Atualiza o Y máximo visível (AGORA ESTÁ FORA E DEPOIS DO 'IF')
+
+    let even = ((n / 2) | 0) % 2; // ...
     let areia = ASSETS.COLOR.AREIA[even * 1]; // Cor da grama.
     let faixa = ASSETS.COLOR.FAIXA[even * 1]; // Cor da faixa de trepidação.
     let asfalto = ASSETS.COLOR.ASFALTO[even * 1]; // Cor do asfalto.
@@ -628,9 +634,10 @@ if (Math.abs(playerX) > 1.15 && speed >= maxOffSpeed) {
   }
 
   // Loop 2: Desenha APENAS os sprites (de trás para frente)
-  for (let n = startPos; n < startPos + N; n++) {
+  for (let n = (startPos + N) - 1; n >= startPos; n--) { // <--- CORREÇÃO AQUI
     let l = lines[n % N]; // Pega a linha correspondente (já projetada pelo loop anterior)
 
+    if (!l.visible) continue;
     // Desenho dos Sprites de cenário (árvores).
     if (n % 10 === 0) l.drawSprite(ASSETS.IMAGE.TREE, -2); // Árvore na esquerda.
     if ((n + 5) % 10 === 0) l.drawSprite(ASSETS.IMAGE.TREE, 1.3); // Árvore na direita.

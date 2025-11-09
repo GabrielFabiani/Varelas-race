@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dash</title>
+    <link rel="icon" href="icon.png">
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Press+Start+2P"
+    />
+    <link rel="stylesheet" href="CSS/style.css">
+    
+    <script>
+      window.console = window.console || function (t) {};
+    </script>
+    <script>
+      if (document.location.search.match(/type=embed/gi)) {
+        window.parent.postMessage("resize", "*");
+      }
+    </script>
+  </head>
+
+  <body translate="no">
+    <div class="layout">
+      <div id="game">
+        <canvas id="roadCanvas" width="800" height="500"></canvas> 
+        
+        <div id="cloud"></div>
+        <div id="hero"></div> 
+
+        <div id="hud">
+          <span id="time" class="topUI">0</span>
+          <span id="score" class="topUI">0</span>
+          <span id="lap" class="topUI">0'00"000</span>
+          <span id="tacho">0</span>
+        </div>
+
+        <div id="home">
+          <h1>Varela´s race</h1>
+          <p id="text"></p>
+          <div id="highscore"></div>
+        </div>
+      </div>
+
+      <div id="controls">
+        <span><span>C</span>Pressione para começar</span>
+        <span><span>M</span>Mutar</span>
+        <span><span>&lt;</span><span>&gt;</span>Mover</span>
+        <span><span>&lt;</span><span>&gt;</span>Acelerar</span>
+      </div>
+    
+    
+    <script src="JS/index.js"></script> 
+    
+  </body>
+</html>

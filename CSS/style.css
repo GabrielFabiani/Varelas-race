@@ -1,0 +1,170 @@
+body {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #474646;
+  font-family: "Press Start 2P";
+  color: #fff;
+  overflow: hidden;
+}
+
+.layout{
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+#game {
+  position: relative;
+  border: 4px solid #fff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  /* Define o tamanho da tela do jogo (800x500 do JS) */
+  width: 800px;
+  height: 500px;
+}
+
+/* -----------------------------------
+ * Elementos de Camadas (Canvas, Nuvem, Herói, HUD)
+ * ----------------------------------- */
+
+/* O Canvas ocupa toda a área do #game e é a camada principal (estrada) */
+#roadCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10; /* Camada da estrada */
+}
+
+/* A nuvem (céu) é a camada mais baixa e se move no fundo */
+#cloud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 800px; /* Tamanho fixo da tela */
+  height: 500px;
+  background-size: cover;
+  z-index: 5; /* Abaixo do Canvas (ou apenas background do body, mas mantive a div) */
+}
+
+/* O Herói (carro do jogador) é posicionado via JS, mas precisa de z-index alto */
+#hero {
+  position: absolute;
+  z-index: 100; /* Deve estar na frente de tudo */
+  /* Propriedades como width, height, top e left são definidas no JS */
+}
+
+/* O HUD e a tela inicial também ficam por cima do Canvas */
+#hud, #home {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 200; /* Camada mais alta para texto e placares */
+}
+
+/* Elementos de carros antigos (se houvessem) não são mais usados, 
+   o CSS deles deve ser removido ou ignorado */
+
+
+/* -----------------------------------
+ * Estilos do HUD (Interface)
+ * ----------------------------------- */
+ 
+#hud {
+  display: none;
+  font-size: 10px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.topUI {
+  position: absolute;
+  top: 10px;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #fff;
+}
+
+#time {
+  left: 10px;
+}
+
+#score {
+  right: 10px;
+}
+
+#lap {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+#tacho {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 36px;
+  line-height: 1;
+}
+
+/* -----------------------------------
+ * Estilos da Tela Inicial
+ * ----------------------------------- */
+
+#home {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+#home h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+#text {
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.highscore {
+  margin-top: 20px;
+  font-size: 10px;
+  text-align: left;
+}
+
+/* -----------------------------------
+ * Estilos de Controles
+ * ----------------------------------- */
+
+#controls {
+  font-size: 10px;
+  color: #fff;
+  opacity: 0.5;
+ display: flex;
+ justify-content: center;
+ padding: 20px
+}
+
+#controls span {
+  margin-right: 15px;
+}
+
+#controls span span {
+  color: #ff0;
+}

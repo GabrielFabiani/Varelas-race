@@ -61,20 +61,16 @@ const ASSETS = {
 // ------------------------------------------------------------
 
 // Adiciona um método para preencher números com zeros à esquerda (ex: 1 -> 001).
-Number.prototype.pad = function (numZeros, char = 0) {
-  let n = Math.abs(this);
-  let zeros = Math.max(0, numZeros - Math.floor(n).toString().length);
-  let zeroString = Math.pow(10, zeros)
-    .toString()
-    
-    .replace(0, char);
-  return zeroString + n;
-};
+// Utilitários para manipulação de números (não poluir prototypes)
+function pad(n, width, char = "0") {
+  const s = String(Math.abs(n));
+  const fill = char.repeat(Math.max(0, width - s.length));
+  return fill + s;
+}
 
-// Adiciona um método para limitar um número entre um valor mínimo e um máximo.
-Number.prototype.clamp = function (min, max) {
-  return Math.max(min, Math.min(this, max));
-};
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(n, max));
+}
 
 // Retorna o timestamp atual (tempo em milissegundos).
 const timestamp = (_) => new Date().getTime();
@@ -164,23 +160,58 @@ class Line {
 
   // Desenha um sprite (árvore, carro, linha de chegada) no segmento de estrada.
   drawSprite(sprite, offset) {
-    let image = sprite.img; 
-    if (!image) return; 
+    let image = sprite.img;
+    if (!image) return;
 
-    // Calcula a posição de destino X e Y do sprite na tela.
-    let destX = this.X + this.scale * halfWidth * offset;
-    let destY = this.Y + 4;
+    // Diferentes escalas para árvores e carros
+    let baseScale = sprite === ASSETS.IMAGE.TREE ? 300 : 200;
     
-    // Calcula a largura e altura do sprite baseado na perspectiva (W da linha).
-    let destW = (sprite.width * this.W) / 250; 
-    let destH = (sprite.height * this.W) / 250;
+    // Calcula as dimensões com base no tipo de sprite
+    let destW = (sprite.width * this.W) / baseScale;
+    let destH = (sprite.height * this.W) / baseScale;
 
-    // Ajusta a posição para que o sprite seja desenhado corretamente (centralizado/ancorado).
-    destX += destW * offset;
-    destY += destH * -1;
+    // Posição base X (considerando a perspectiva)
+    let destX = this.X;
     
-    // Desenha a imagem no canvas.
-    ctx.drawImage(image, destX, destY, destW, destH);
+    // Ajuste de posição X com base no offset e tipo de sprite
+    if (sprite === ASSETS.IMAGE.TREE) {
+        // Árvores têm posição fixa relativa à borda da estrada
+        destX = this.X + (offset > 0 ? this.W * 2 : -this.W * 2);
+    } else {
+        // Carros seguem a perspectiva da pista
+        destX = this.X + (this.scale * halfWidth * offset * 0.8);
+        destX += (destW * offset * 0.4); // Ajuste fino da posição horizontal
+    }
+
+    // Calcula posição Y com base no tipo de sprite
+    let destY = this.Y;
+    if (sprite === ASSETS.IMAGE.TREE) {
+        // Árvores são posicionadas no chão
+        destY -= destH;
+    } else {
+        // Ajuste mais preciso para carros
+        destY -= destH * 0.8; // Move um pouco mais para cima para mostrar o carro inteiro
+        
+        // Ajuste de perspectiva vertical para carros
+        if (this.Y > height * 0.7) {
+            destY += (this.Y - height * 0.7) * 0.35; // Ajuste gradual com base na proximidade
+        }
+    }
+
+    // Não renderiza sprites muito longe ou muito perto
+    if (sprite === ASSETS.IMAGE.TREE) {
+        if (this.Y < height * 0.1 || this.Y > height * 0.97) return;
+    } else {
+        // Ajuste mais gradual para visibilidade dos carros
+        if (this.Y < height * 0.15 || this.Y > height * 0.85) return;
+    }
+
+    // Desenha o sprite
+    try {
+        ctx.drawImage(image, destX, destY, destW, destH);
+    } catch (e) {
+        console.error("Erro ao desenhar sprite:", e);
+    }
   }
 }
 
@@ -288,16 +319,16 @@ const maxSpeed = 200;
 const accel = 38; // Aceleração normal.
 const breaking = -80; // Desaceleração de freio.
 const decel = -40; // Desaceleração por inércia/soltar acelerador.
-const maxOffSpeed = 40; // Velocidade máxima fora da pista principal.
-const offDecel = -70; // Desaceleração fora da pista.
-const enemy_speed = 8; // Velocidade dos carros inimigos.
+const maxOffSpeed = 120; // Velocidade máxima fora da pista principal - aumentada
+const offDecel = -40; // Desaceleração fora da pista - reduzida
+const enemy_speed = 5; // Velocidade dos carros inimigos - reduzida para movimento mais suave.
 const hitSpeed = 20; // Velocidade após uma colisão.
 
 // Posições horizontais (em unidades do jogo) para as faixas (A, B, C).
 const LANE = {
-  A: -2.3, // Faixa esquerda.
-  B: -0.5, // Faixa central.
-  C: 1.2, // Faixa direita.
+  A: -1.2, // Faixa esquerda
+  B: 0, // Faixa central
+  C: 1.2, // Faixa direita
 };
 
 // Comprimento total da pista.
@@ -326,6 +357,8 @@ let cars = []; // Array de objetos Car (carros inimigos).
 // Variáveis globais do Canvas.
 let roadCanvas; // Referência ao elemento Canvas.
 let ctx; // Contexto de renderização 2D do Canvas.
+// Elementos DOM (cacheados no init)
+let game, text, hero, hud, home, tacho, highscore, cloud, time, score, lap;
 let loadedImages = 0; // Contador de imagens carregadas.
 let totalImages = Object.keys(ASSETS.IMAGE).length; // Total de imagens a carregar.
 
@@ -484,20 +517,20 @@ function update(step) {
   else hero.style.backgroundPosition = "-110px 0"; // Sprite do carro centralizado.
 
   // Limita a posição horizontal do jogador.
-  playerX = playerX.clamp(-3, 3);
+  playerX = clamp(playerX, -3, 3);
 
   // Controle de velocidade (aceleração/frenagem/desaceleração).
   if (inGame && KEYS.ArrowUp) speed = accelerate(speed, accel, step);
   else if (KEYS.ArrowDown) speed = accelerate(speed, breaking, step);
   else speed = accelerate(speed, decel, step);
 
-  // Desaceleração se o jogador estiver fora da pista principal.
-  if (Math.abs(playerX) > 0.55 && speed >= maxOffSpeed) {
+  // Desaceleração se o jogador estiver MUITO fora da pista principal
+  if (Math.abs(playerX) > 1.5 && speed >= maxOffSpeed) {
     speed = accelerate(speed, offDecel, step);
   }
 
   // Limita a velocidade entre 0 e maxSpeed.
-  speed = speed.clamp(0, maxSpeed);
+  speed = clamp(speed, 0, maxSpeed);
 
   // Atualiza o mapa (curvatura e elevação) no segmento de estrada mais distante (endPos).
   let current = map[mapIndex];
@@ -533,14 +566,15 @@ function update(step) {
     inGame = false;
   } else {
     // Atualiza a interface (tempo, pontuação, velocidade, tempo de volta).
-    time.innerText = (countDown | 0).pad(3);
-    score.innerText = (scoreVal | 0).pad(8);
+    time.innerText = pad(countDown | 0, 3);
+    score.innerText = pad(scoreVal | 0, 8);
     tacho.innerText = speed | 0;
 
     let cT = new Date(timestamp() - start);
-    lap.innerText = `${cT.getMinutes()}'${cT.getSeconds().pad(2)}"${cT
-      .getMilliseconds()
-      .pad(3)}`;
+    lap.innerText = `${cT.getMinutes()}'${pad(cT.getSeconds(), 2)}"${pad(
+      cT.getMilliseconds(),
+      3
+    )}`;
   }
 
   // Reproduz o som do motor, ajustando o pitch com base na velocidade.
@@ -557,19 +591,25 @@ function update(step) {
 
     // Reposiciona o carro inimigo (respawn) se ele passou da visão (endPos).
     if ((car.pos | 0) === endPos) {
-      if (speed < 30) car.pos = startPos;
-      else car.pos = endPos - 2; // Posiciona um pouco mais perto se a velocidade for alta.
-      car.lane = randomProperty(LANE); // Escolhe uma faixa aleatória.
+      if (speed < 30) {
+        car.pos = startPos;
+      } else {
+        car.pos = endPos - 5; // Aumentado o espaço para evitar aparecimento abrupto
+      }
+      // Mantém a mesma faixa por mais tempo para evitar mudanças bruscas
+      if (Math.random() < 0.3) { // 30% de chance de mudar de faixa
+        car.lane = randomProperty(LANE);
+      }
     }
 
     // Verificação de colisão com o jogador.
-    const offsetRatio = 5;
+    const collisionWidth = 0.35; // Reduz a área de colisão
     if (
-      (car.pos | 0) === startPos && // O carro inimigo está no mesmo segmento que o jogador.
-      isCollide(playerX * offsetRatio + LANE.B, 0.5, car.lane, 0.5) // Verifica a colisão horizontal.
+      (car.pos | 0) === startPos && // O carro inimigo está no mesmo segmento que o jogador
+      isCollide(playerX * 2 + LANE.B, collisionWidth, car.lane, collisionWidth) // Colisão mais precisa
     ) {
-      speed = Math.min(hitSpeed, speed); // Reduz a velocidade após a colisão.
-      if (inGame) audio.play("honk"); // Toca o som de buzina/colisão.
+      speed = Math.min(hitSpeed, speed); // Reduz a velocidade após a colisão
+      if (inGame) audio.play("honk"); // Toca o som de buzina/colisão
     }
   }
   
@@ -623,8 +663,8 @@ function update(step) {
     }
     
     // Desenho dos Sprites de cenário (árvores).
-    if (n % 10 === 0) l.drawSprite(ASSETS.IMAGE.TREE, -2); // Árvore na esquerda.
-    if ((n + 5) % 10 === 0) l.drawSprite(ASSETS.IMAGE.TREE, 1.3); // Árvore na direita.
+    if (n % 10 === 0) l.drawSprite(ASSETS.IMAGE.TREE, -2.3); // Árvore na esquerda
+    if ((n + 5) % 10 === 0) l.drawSprite(ASSETS.IMAGE.TREE, 2); // Árvore na direita
 
     // Desenha o sprite especial (linha de chegada).
     if (l.special) l.drawSprite(l.special, l.special.offset || 0);
@@ -676,9 +716,9 @@ function reset() {
 function updateHighscore() {
   let hN = Math.min(12, highscores.length);
   for (let i = 0; i < hN; i++) {
-    highscore.children[i].innerHTML = `${(i + 1).pad(2, "&nbsp;")}. ${
-      highscores[i]
-    }`;
+    // Pad the ranking number with non-breaking spaces for display
+    const rank = String(i + 1).padStart(2, " ").replace(/ /g, "&nbsp;");
+    highscore.children[i].innerHTML = `${rank}. ${highscores[i]}`;
   }
 }
 
@@ -709,15 +749,27 @@ function loadImages(callback) {
   }
 }
 
+
 // Função de inicialização principal do jogo.
 function init() {
   // Configura as dimensões do contêiner do jogo.
+  // Cachear elementos DOM explicitamente (evita depender de variáveis globais implícitas)
+  game = document.getElementById("game");
+  roadCanvas = document.getElementById("roadCanvas");
+  ctx = roadCanvas.getContext("2d");
+  text = document.getElementById("text");
+  hero = document.getElementById("hero");
+  hud = document.getElementById("hud");
+  home = document.getElementById("home");
+  tacho = document.getElementById("tacho");
+  highscore = document.getElementById("highscore");
+  cloud = document.getElementById("cloud");
+  time = document.getElementById("time");
+  score = document.getElementById("score");
+  lap = document.getElementById("lap");
+
   game.style.width = width + "px";
   game.style.height = height + "px";
-  
-  // Obtém a referência ao canvas e ao contexto 2D.
-  roadCanvas = document.getElementById('roadCanvas');
-  ctx = roadCanvas.getContext('2d');
 
   // Configura o estilo e a posição do sprite do carro do jogador (DOM).
   hero.style.top = height - 80 + "px";
@@ -735,14 +787,12 @@ function init() {
     audio.load(ASSETS.AUDIO[key], key, (_) => 0)
   );
 
-  // Inicializa a lista de carros inimigos (posição inicial, sprite, faixa).
+  // Inicializa a lista de carros inimigos com maior espaçamento
   cars.push(new Car(0, ASSETS.IMAGE.CAR, LANE.C));
-  cars.push(new Car(10, ASSETS.IMAGE.CAR, LANE.B));
-  cars.push(new Car(20, ASSETS.IMAGE.CAR, LANE.C));
-  cars.push(new Car(35, ASSETS.IMAGE.CAR, LANE.C));
+  cars.push(new Car(25, ASSETS.IMAGE.CAR, LANE.B));
   cars.push(new Car(50, ASSETS.IMAGE.CAR, LANE.A));
-  cars.push(new Car(60, ASSETS.IMAGE.CAR, LANE.B));
-  cars.push(new Car(70, ASSETS.IMAGE.CAR, LANE.A));
+  cars.push(new Car(75, ASSETS.IMAGE.CAR, LANE.C));
+  cars.push(new Car(100, ASSETS.IMAGE.CAR, LANE.B));
 
   // Inicializa os N segmentos de estrada (linhas) e define suas posições Z iniciais.
   for (let i = 0; i < N; i++) {

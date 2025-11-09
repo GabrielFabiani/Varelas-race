@@ -41,7 +41,7 @@ const ASSETS = {
 
     // Imagem de fundo do céu/nuvens.
     SKY: {
-      src: "img/cloud.jpg",
+      src: "img/img/ceu.png",
     },
   },
 
@@ -164,24 +164,24 @@ class Line {
 
   // Desenha um sprite (árvore, carro, linha de chegada) no segmento de estrada.
   drawSprite(sprite, offset) {
-    let image = sprite.img; 
-    if (!image) return; 
+    let image = sprite.img; 
+    if (!image) return; 
 
-    // Calcula a posição de destino X e Y do sprite na tela.
-    let destX = this.X + this.scale * halfWidth * offset;
-    let destY = this.Y + 4;
-    
-    // Calcula a largura e altura do sprite baseado na perspectiva (W da linha).
-    let destW = (sprite.width * this.W) / 250; 
-    let destH = (sprite.height * this.W) / 250;
+    // Calcula a posição de destino X e Y do sprite na tela.
+    let destX = this.X + this.W * offset;
+    let destY = this.Y + 4;
+    
+    // Calcula a largura e altura do sprite baseado na perspectiva (W da linha).
+    let destW = (sprite.width * this.W) / 250; 
+    let destH = (sprite.height * this.W) / 250;
 
-    // Ajusta a posição para que o sprite seja desenhado corretamente (centralizado/ancorado).
-    destX += destW * offset;
-    destY += destH * -1;
-    
-    // Desenha a imagem no canvas.
-    ctx.drawImage(image, destX, destY, destW, destH);
-  }
+    // Ajusta a posição para que o sprite seja desenhado corretamente (centralizado/ancorado).
+    destX -= destW / 2; // <--- ESTA É A LINHA CORRETA
+    destY += destH * -1;
+    
+    // Desenha a imagem no canvas.
+    ctx.drawImage(image, destX, destY, destW, destH);
+  }
 }
 
 // Representa um carro inimigo na pista.
@@ -491,10 +491,10 @@ function update(step) {
   else if (KEYS.ArrowDown) speed = accelerate(speed, breaking, step);
   else speed = accelerate(speed, decel, step);
 
-  // Desaceleração se o jogador estiver fora da pista principal.
-  if (Math.abs(playerX) > 0.55 && speed >= maxOffSpeed) {
+// Desaceleração se o jogador estiver fora da pista principal (areia).
+if (Math.abs(playerX) > 1.15 && speed >= maxOffSpeed) {
     speed = accelerate(speed, offDecel, step);
-  }
+}
 
   // Limita a velocidade entre 0 e maxSpeed.
   speed = speed.clamp(0, maxSpeed);
@@ -583,57 +583,67 @@ function update(step) {
   let dx = 0; // Mudança horizontal acumulada (devido à curva).
 
   // Loop para desenhar os segmentos de estrada (N segmentos visíveis).
-  for (let n = startPos; n < startPos + N; n++) {
-    let l = lines[n % N]; // Segmento de estrada atual (usa módulo N para loop).
+ // --- INÍCIO DA CORREÇÃO ---
 
-    // Projeta as coordenadas 3D para 2D.
-    l.project(
-      playerX * roadW - x, // Ajusta o desvio horizontal da câmera.
-      camH,
-      startPos * segL - (n >= N ? N * segL : 0) // Ajusta a profundidade (Z).
-    );
-    x += dx;
-    dx += l.curve;
+  // Loop 1: Desenha APENAS a estrada (de trás para frente)
+  for (let n = startPos; n < startPos + N; n++) {
+    let l = lines[n % N]; // Segmento de estrada atual (usa módulo N para loop).
 
-    if (l.Y >= maxy) continue; // Pula se o segmento estiver abaixo do segmento anterior (não visível).
-    maxy = l.Y; // Atualiza o Y máximo visível.
+    // Projeta as coordenadas 3D para 2D.
+    l.project(
+      playerX * roadW - x, // Ajusta o desvio horizontal da câmera.
+      camH,
+      startPos * segL - (n >= N ? N * segL : 0) // Ajusta a profundidade (Z).
+    );
+    x += dx;
+    dx += l.curve;
 
-    let even = ((n / 2) | 0) % 2; // Alterna entre 0 e 1 para cores zebradas.
-    let areia = ASSETS.COLOR.AREIA[even * 1]; // Cor da grama.
-    let faixa = ASSETS.COLOR.FAIXA[even * 1]; // Cor da faixa de trepidação.
-    let asfalto = ASSETS.COLOR.ASFALTO[even * 1]; // Cor do asfalto.
+    if (l.Y >= maxy) continue; // Pula se o segmento estiver abaixo do segmento anterior (não visível).
+    maxy = l.Y; // Atualiza o Y máximo visível.
 
-    let p = lines[(n - 1) % N]; // Segmento anterior (para desenhar o quadrilátero entre p e l).
+    let even = ((n / 2) | 0) % 2; // Alterna entre 0 e 1 para cores zebradas.
+    let areia = ASSETS.COLOR.AREIA[even * 1]; // Cor da grama.
+    let faixa = ASSETS.COLOR.FAIXA[even * 1]; // Cor da faixa de trepidação.
+    let asfalto = ASSETS.COLOR.ASFALTO[even * 1]; // Cor do asfalto.
 
-    // Desenha a Estrada usando drawQuad:
+    let p = lines[(n - 1) % N]; // Segmento anterior (para desenhar o quadrilátero entre p e l).
 
-    // Grama esquerda
-    drawQuad(areia, width / 4, p.Y, halfWidth + 2, width / 4, l.Y, halfWidth);
-    // Grama direita
-    drawQuad(areia, (width / 4) * 3, p.Y, halfWidth + 2, (width / 4) * 3, l.Y, halfWidth);
+    // Desenha a Estrada usando drawQuad:
+    // Grama esquerda
+    drawQuad(areia, width / 4, p.Y, halfWidth + 2, width / 4, l.Y, halfWidth);
+    // Grama direita
+    drawQuad(areia, (width / 4) * 3, p.Y, halfWidth + 2, (width / 4) * 3, l.Y, halfWidth);
 
-    // Faixa lateral e asfalto principal.
-    drawQuad(faixa, p.X, p.Y, p.W * 1.15, l.X, l.Y, l.W * 1.15);
-    drawQuad(asfalto, p.X, p.Y, p.W, l.X, l.Y, l.W);
+    // Faixa lateral e asfalto principal.
+    drawQuad(faixa, p.X, p.Y, p.W * 1.15, l.X, l.Y, l.W * 1.15);
+    drawQuad(asfalto, p.X, p.Y, p.W, l.X, l.Y, l.W);
 
-    if (!even) {
-      // Linha central (faixa tracejada) - desenha a cor da faixa e depois a cor do asfalto.
-      drawQuad(ASSETS.COLOR.FAIXA[1], p.X, p.Y, p.W * 0.4, l.X, l.Y, l.W * 0.4);
-      drawQuad(asfalto, p.X, p.Y, p.W * 0.35, l.X, l.Y, l.W * 0.35);
-    }
-    
-    // Desenho dos Sprites de cenário (árvores).
-    if (n % 10 === 0) l.drawSprite(ASSETS.IMAGE.TREE, -2); // Árvore na esquerda.
-    if ((n + 5) % 10 === 0) l.drawSprite(ASSETS.IMAGE.TREE, 1.3); // Árvore na direita.
+    if (!even) {
+      // Linha central (faixa tracejada) - desenha a cor da faixa e depois a cor do asfalto.
+      drawQuad(ASSETS.COLOR.FAIXA[1], p.X, p.Y, p.W * 0.4, l.X, l.Y, l.W * 0.4);
+      drawQuad(asfalto, p.X, p.Y, p.W * 0.35, l.X, l.Y, l.W * 0.35);
+    }
+    
+    // TODAS AS CHAMADAS drawSprite() FORAM MOVIDAS PARA O PRÓXIMO LOOP
+  }
 
-    // Desenha o sprite especial (linha de chegada).
-    if (l.special) l.drawSprite(l.special, l.special.offset || 0);
+  // Loop 2: Desenha APENAS os sprites (de trás para frente)
+  for (let n = startPos; n < startPos + N; n++) {
+    let l = lines[n % N]; // Pega a linha correspondente (já projetada pelo loop anterior)
 
-    // Desenha os carros inimigos.
-    for (let car of cars)
-      if ((car.pos | 0) === n % N) 
-        l.drawSprite(car.type, car.lane);
-  }
+    // Desenho dos Sprites de cenário (árvores).
+    if (n % 10 === 0) l.drawSprite(ASSETS.IMAGE.TREE, -2); // Árvore na esquerda.
+    if ((n + 5) % 10 === 0) l.drawSprite(ASSETS.IMAGE.TREE, 1.3); // Árvore na direita.
+
+    // Desenha o sprite especial (linha de chegada).
+    if (l.special) l.drawSprite(l.special, l.special.offset || 0);
+
+    // Desenha os carros inimigos.
+    for (let car of cars)
+      if ((car.pos | 0) === n % N) 
+        l.drawSprite(car.type, car.lane);
+  }
+// --- FIM DA CORREÇÃO ---
 }
 
 // ------------------------------------------------------------

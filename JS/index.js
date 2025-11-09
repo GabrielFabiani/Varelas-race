@@ -565,9 +565,9 @@ if (Math.abs(playerX) > 1.15 && speed >= maxOffSpeed) {
     // Verificação de colisão com o jogador.
     const offsetRatio = 5;
     if (
-      (car.pos | 0) === startPos && // O carro inimigo está no mesmo segmento que o jogador.
-      isCollide(playerX * offsetRatio + 0, 0.5, car.lane, 0.5) // Correção: LANE.B agora é 0
-    ) {
+      (car.pos | 0) === startPos && // O carro inimigo está no mesmo segmento que o jogador.
+      isCollide(playerX, 0.2, car.lane, 0.2) // <<-- LINHA TOTALMENTE MODIFICADA
+    ) {
       speed = Math.min(hitSpeed, speed); // Reduz a velocidade após a colisão.
       if (inGame) audio.play("honk"); // Toca o som de buzina/colisão.
     }

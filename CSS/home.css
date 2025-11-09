@@ -1,0 +1,43 @@
+body{
+    background-color: #474646;
+}
+
+
+.nav{
+    background-color: #474646;
+    display: flex;
+    justify-content: space-around;
+   
+}
+
+.nav a{
+     text-decoration: none;
+     color: black;
+     font-size: 25px;
+     font-weight: bold;
+}
+
+.nav a:hover{
+    color: yellow;
+}
+
+.geral{
+    display: flex;
+    justify-content: center;
+    padding: 100px;
+}
+
+.pag{
+    display: flex;
+    align-items: center;
+    padding: 50px;
+    flex-direction: column;
+    border: 2px solid;
+    border-radius: 10px;
+    height: 550px;
+    width: 300px;
+}
+
+.texto p{
+    font-weight: bold;
+}

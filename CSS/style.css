@@ -10,6 +10,24 @@ body {
   overflow: hidden;
 }
 
+.nav{
+    background-color: #474646;
+    display: flex;
+    justify-content: space-around;
+    margin: 35px;
+    gap: 45px;
+}
+
+.nav a{
+     text-decoration: none;
+     color: black;
+     font-size: 25px;
+     font-weight: bold;
+}
+
+.nav a:hover{
+    color: yellow;
+}
 .layout{
     display: flex;
     justify-content: center;

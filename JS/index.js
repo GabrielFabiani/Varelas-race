@@ -26,7 +26,7 @@ const ASSETS = {
 
     // Sprite dos carros 
     CAR: {
-      src: "img/car04.png",
+      src: "img/img/carro.png",
       width: 110, 
       height: 56, 
     },

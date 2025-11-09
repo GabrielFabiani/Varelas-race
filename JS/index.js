@@ -295,9 +295,9 @@ const hitSpeed = 20; // Velocidade após uma colisão.
 
 // Posições horizontais (em unidades do jogo) para as faixas (A, B, C).
 const LANE = {
-  A: -2.3, // Faixa esquerda.
-  B: -0.5, // Faixa central.
-  C: 1.2, // Faixa direita.
+ A: -0.7, // Faixa esquerda (dentro de -1.0)
+ B: 0, // Faixa central
+ C: 0.7, // Faixa direita (dentro de 1.0)
 };
 
 // Comprimento total da pista.
@@ -566,7 +566,7 @@ if (Math.abs(playerX) > 1.15 && speed >= maxOffSpeed) {
     const offsetRatio = 5;
     if (
       (car.pos | 0) === startPos && // O carro inimigo está no mesmo segmento que o jogador.
-      isCollide(playerX * offsetRatio + LANE.B, 0.5, car.lane, 0.5) // Verifica a colisão horizontal.
+      isCollide(playerX * offsetRatio + 0, 0.5, car.lane, 0.5) // Correção: LANE.B agora é 0
     ) {
       speed = Math.min(hitSpeed, speed); // Reduz a velocidade após a colisão.
       if (inGame) audio.play("honk"); // Toca o som de buzina/colisão.

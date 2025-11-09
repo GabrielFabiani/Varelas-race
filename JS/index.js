@@ -62,12 +62,12 @@ const ASSETS = {
 
 // Adiciona um método para preencher números com zeros à esquerda (ex: 1 -> 001).
 Number.prototype.pad = function (numZeros, char = 0) {
-  let n = Math.abs(this);
-  let zeros = Math.max(0, numZeros - Math.floor(n).toString().length);
-  let zeroString = Math.pow(10, zeros)
-    .toString()
-    
-    .replace(0, char);
+  // Garante que trabalhamos com inteiros e transforma o char em string
+  let n = Math.abs(Math.floor(this));
+  let zeros = Math.max(0, numZeros - n.toString().length);
+  let ch = String(char);
+  // Cria uma string com 'zeros' repetições do caractere desejado
+  let zeroString = ch.repeat(zeros);
   return zeroString + n;
 };
 

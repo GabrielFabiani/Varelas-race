@@ -335,10 +335,9 @@ let totalImages = Object.keys(ASSETS.IMAGE).length; // Total de imagens a carreg
 // Geração e Estrutura do Mapa
 // ------------------------------------------------------------
 
-// Função auxiliar (não usada no código atual, mas definida)
-function getFun(val) {
-  return (i) => val;
-}
+// function getFun(val) {
+  //return (i) => val;
+//}
 
 // Gera o mapa da pista, composto por seções de curvas e elevações.
 function genMap() {

@@ -12,9 +12,9 @@ const ASSETS = {
   IMAGE: {
     // Sprite de uma árvore.
     TREE: {
-      src: "img/tree.png",
+      src: "img/img/arvorea.png",
       width: 142,
-      height: 200,
+      height: 230,
     },
 
     // Sprite do carro do jogador

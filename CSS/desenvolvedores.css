@@ -25,6 +25,11 @@ body{
     flex-direction: column;
 }
 
+.rm{
+    justify-content: center;
+    display: flex;
+    font-weight: bold;
+}
 .conteudo img{
     width: 100px;
     border-radius: 50%;

@@ -5,14 +5,14 @@ const ASSETS = {
     // Cores das faixas 
     FAIXA: ["#959298", "#f9fd00ff"],
     // Cores da areia
-    AREIA: ["#eedccd", "#e6d4c5"],
+    AREIA: ["#009E60", "#2E8B57"],
   },
 
   // Define imagens 
   IMAGE: {
     // Sprite de uma árvore.
     TREE: {
-      src: "img/img/arvorea.png",
+      src: "img/img/arvorefinal.png",
       width: 142,
       height: 230,
     },
@@ -22,6 +22,7 @@ const ASSETS = {
       src: "img/hero.png",
       width: 110,
       height: 56,
+      scale: 1.6, // <-- Adicione um fator de escala aqui (1.0 é o tamanho normal, 1.5 é 50% maior)
     },
 
     // Sprite dos carros 
@@ -48,7 +49,7 @@ const ASSETS = {
   // Define URLs dos arquivos de áudio.
   AUDIO: {
     theme:
-      "https://s3-us-west-2.amazonaws.com/s.cdpn.io/155629/theme.mp3",
+      "https://s3 -us-west-2.amazonaws.com/s.cdpn.io/155629/theme.mp3",
     engine:
       "https://s3-us-west-2.amazonaws.com/s.cdpn.io/155629/engine.wav",
     honk: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/155629/honk.wav",
@@ -169,11 +170,11 @@ class Line {
 
     // Calcula a posição de destino X e Y do sprite na tela.
     let destX = this.X + this.W * offset;
-    let destY = this.Y + 4;
+    let destY = this.Y;
     
     // Calcula a largura e altura do sprite baseado na perspectiva (W da linha).
-    let destW = (sprite.width * this.W) / 250; 
-    let destH = (sprite.height * this.W) / 250;
+    let destW = (sprite.width * this.W) / 250; // <-- Reduza este número para AUMENTAR o tamanho
+    let destH = (sprite.height * this.W) / 250; // <-- Reduza este número para AUMENTAR o tamanho
 
     // Ajusta a posição para que o sprite seja desenhado corretamente (centralizado/ancorado).
     destX -= destW / 2; // <--- ESTA É A LINHA CORRETA
@@ -409,7 +410,7 @@ addEventListener(`keyup`, function (e) {
   }
 
   // Tecla 'C' (ou Enter no contexto do jogo original): Inicia o jogo com contagem regressiva.
-  if (e.code === "KeyC") {
+  if (e.code === "Enter") {
     e.preventDefault();
 
     if (inGame) return; // Não faz nada se já estiver no jogo.
@@ -475,20 +476,27 @@ function update(step) {
   playerX -= (lines[startPos].curve / 5000) * step * speed;
 
   // Controle de movimento lateral do jogador com as setas.
-  if (KEYS.ArrowRight)
-    (hero.style.backgroundPosition = "-220px 0"), // Altera sprite do carro para a direita.
-      (playerX += 0.007 * step * speed);
-  else if (KEYS.ArrowLeft)
-    (hero.style.backgroundPosition = "0 0"), // Altera sprite do carro para a esquerda.
-      (playerX -= 0.007 * step * speed);
-  else hero.style.backgroundPosition = "-110px 0"; // Sprite do carro centralizado.
+    // Controle de movimento lateral do jogador com as setas.
+  
+  // Calcula as posições X do sprite escaladas
+  let heroScale = ASSETS.IMAGE.HERO.scale || 1;
+  let posLeft = 0;
+  let posCenter = -(ASSETS.IMAGE.HERO.width * heroScale);
+  let posRight = -(ASSETS.IMAGE.HERO.width * 2 * heroScale);
 
+  if (KEYS.KeyD)
+    (hero.style.backgroundPosition = `${posRight}px 0`), // Altera sprite do carro para a direita
+      (playerX += 0.007 * step * speed);
+  else if (KEYS.KeyA)
+    (hero.style.backgroundPosition = `${posLeft}px 0`), // Altera sprite do carro para a esquerda
+      (playerX -= 0.007 * step * speed);
+  else hero.style.backgroundPosition = `${posCenter}px 0`; // Sprite do carro centralizado
   // Limita a posição horizontal do jogador.
   playerX = playerX.clamp(-3, 3);
 
   // Controle de velocidade (aceleração/frenagem/desaceleração).
-  if (inGame && KEYS.ArrowUp) speed = accelerate(speed, accel, step);
-  else if (KEYS.ArrowDown) speed = accelerate(speed, breaking, step);
+  if (inGame && KEYS.KeyW) speed = accelerate(speed, accel, step);
+  else if (KEYS.KeyS) speed = accelerate(speed, breaking, step);
   else speed = accelerate(speed, decel, step);
 
 // Desaceleração se o jogador estiver fora da pista principal (areia).
@@ -566,7 +574,7 @@ if (Math.abs(playerX) > 1.15 && speed >= maxOffSpeed) {
     const offsetRatio = 5;
     if (
       (car.pos | 0) === startPos && // O carro inimigo está no mesmo segmento que o jogador.
-      isCollide(playerX, 0.2, car.lane, 0.2) // <<-- LINHA TOTALMENTE MODIFICADA
+      isCollide(playerX, 0.3, car.lane, 0.2) // <<-- LINHA TOTALMENTE MODIFICADA
     ) {
       speed = Math.min(hitSpeed, speed); // Reduz a velocidade após a colisão.
       if (inGame) audio.play("honk"); // Toca o som de buzina/colisão.
@@ -737,12 +745,24 @@ function init() {
   ctx = roadCanvas.getContext('2d');
 
   // Configura o estilo e a posição do sprite do carro do jogador (DOM).
-  hero.style.top = height - 80 + "px";
-  hero.style.left = halfWidth - ASSETS.IMAGE.HERO.width / 2 + "px";
-  hero.style.background = `url(${ASSETS.IMAGE.HERO.src})`;
-  hero.style.width = `${ASSETS.IMAGE.HERO.width}px`;
-  hero.style.height = `${ASSETS.IMAGE.HERO.height}px`;
+  // Configura o estilo e a posição do sprite do carro do jogador (DOM).
+  let heroScale = ASSETS.IMAGE.HERO.scale || 1; // Pega a escala ou usa 1 por padrão
+  let heroWidth = ASSETS.IMAGE.HERO.width * heroScale;
+  let heroHeight = ASSETS.IMAGE.HERO.height * heroScale;
+  
+  // Calcula o tamanho total do spritesheet (3 carros) * escala
+  let spriteSheetWidth = (ASSETS.IMAGE.HERO.width * 3) * heroScale;
 
+  hero.style.width = `${heroWidth}px`;
+  hero.style.height = `${heroHeight}px`;
+
+  hero.style.top = height - 90 + "px"; // Você pode ajustar o '90' se o carro parecer flutuar
+  hero.style.left = halfWidth - heroWidth / 2 + "px";
+  hero.style.background = `url(${ASSETS.IMAGE.HERO.src})`;
+  
+  // --- ADICIONE ESTAS DUAS LINHAS ---
+  hero.style.backgroundRepeat = "no-repeat"; // Impede a repetição/duplicação
+  hero.style.backgroundSize = `${spriteSheetWidth}px ${heroHeight}px`; // Escala o spritesheet
   // Configura o fundo de nuvens (DOM).
   cloud.style.backgroundImage = `url(${ASSETS.IMAGE.SKY.src})`;
 
